@@ -1,0 +1,88 @@
+name: Build And Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+    tags:
+      - 'v*'
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Windows Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore 7ZipExt.csproj
+
+      - name: Build
+        run: dotnet build 7ZipExt.csproj -c Release --no-restore
+
+      - name: Publish
+        run: dotnet publish 7ZipExt.csproj -c Release -f net10.0-windows -r win-x64 --self-contained false -o artifacts/publish/win-x64
+
+      - name: Package Windows Asset
+        shell: pwsh
+        run: |
+          $tagName = "${{ github.ref_name }}"
+          if ([string]::IsNullOrWhiteSpace($tagName) -or $tagName -eq "") {
+            $tagName = "dev"
+          }
+          $publishDir = "artifacts/publish/win-x64"
+          $assetPath = "artifacts/7ZipExt-$tagName-win-x64.zip"
+          if (Test-Path $assetPath) {
+            Remove-Item $assetPath -Force
+          }
+          Compress-Archive -Path "$publishDir/*" -DestinationPath $assetPath -Force
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-x64
+          path: artifacts/*.zip
+
+  release:
+    name: Create GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: windows-latest
+
+    steps:
+      - name: Download Release Assets
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/release
+
+      - name: Publish Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        shell: pwsh
+        run: |
+          $assetFiles = Get-ChildItem -Path artifacts/release -File -Recurse | Select-Object -ExpandProperty FullName
+          if (-not $assetFiles) {
+            throw "No release assets were downloaded."
+          }
+
+          gh release view $env:TAG_NAME *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:TAG_NAME $assetFiles --clobber
+          }
+          else {
+            gh release create $env:TAG_NAME $assetFiles --title $env:TAG_NAME --generate-notes
+          }

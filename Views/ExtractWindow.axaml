@@ -1,0 +1,75 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SevenZipExt.ViewModels"
+        x:Class="SevenZipExt.Views.ExtractWindow"
+        x:DataType="vm:ExtractWindowViewModel"
+        Title="解压文件"
+        Width="480" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="#F0F0F0">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.Label">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Width" Value="90"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- Buttons -->
+        <Border DockPanel.Dock="Bottom" Background="#E8E8E8" Padding="8,6">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding ProgressText}" FontSize="11" Foreground="#333" TextWrapping="Wrap"
+                           IsVisible="{Binding ProgressText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
+                    <Button Content="确定(_O)" Width="80" Command="{Binding ExtractCommand}"
+                            IsEnabled="{Binding !IsRunning}" IsDefault="True"/>
+                    <Button Content="取消(_C)" Width="80" Command="{Binding CancelCommand}" IsCancel="True"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <StackPanel Margin="12,10" Spacing="8">
+
+            <!-- Archive path -->
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock Text="压缩包路径:" Classes="Label"/>
+                <TextBox Text="{Binding ArchivePath}" Width="310"/>
+                <Button Content="..." Width="32" Command="{Binding BrowseArchiveCommand}"/>
+            </StackPanel>
+
+            <!-- Destination -->
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock Text="解压到:" Classes="Label"/>
+                <TextBox Text="{Binding DestinationPath}" Width="310"/>
+                <Button Content="..." Width="32" Command="{Binding BrowseDestinationCommand}"/>
+            </StackPanel>
+
+            <!-- Options -->
+            <Border BorderBrush="#AAA" BorderThickness="1" CornerRadius="3" Padding="10,8">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="选项" FontWeight="SemiBold" FontSize="12"/>
+                    <CheckBox Content="解压到同名子文件夹" IsChecked="{Binding CreateSubfolder}"/>
+                    <CheckBox Content="保留完整路径" IsChecked="{Binding FullPaths}"/>
+                    <CheckBox Content="覆盖已有文件" IsChecked="{Binding OverwriteExisting}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Password -->
+            <Border BorderBrush="#AAA" BorderThickness="1" CornerRadius="3" Padding="10,8">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="密码" FontWeight="SemiBold" FontSize="12"/>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="密码:" Width="50" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding Password}" Width="200"
+                                 PasswordChar="{Binding ShowPassword, Converter={x:Static BoolConverters.Not}, ConverterParameter='•'}"/>
+                    </StackPanel>
+                    <CheckBox Content="显示密码" IsChecked="{Binding ShowPassword}"/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </DockPanel>
+</Window>
